@@ -1,0 +1,30 @@
+# Maven
+target/
+*.class
+*.jar
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.project
+.classpath
+.settings/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary
+*.log
+/tmp/
+*.swp
+*.swo
+
+# Environment-specific
+env_vars.local.sh

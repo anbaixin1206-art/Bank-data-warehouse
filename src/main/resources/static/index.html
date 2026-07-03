@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bank Data Warehouse — 管理驾驶舱</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+<style>
+/* ============================================================
+   macOS Frosted Glass Design System — Bank DW Dashboard
+   ============================================================ */
+:root {
+  --blue:    #007AFF;
+  --purple:  #BF5AF2;
+  --green:   #34C759;
+  --red:     #FF3B30;
+  --orange:  #FF9500;
+  --teal:    #5AC8FA;
+  --bg:      #F0F2F5;
+  --sidebar-bg: rgba(245,245,247,0.85);
+  --card-bg:  rgba(255,255,255,0.72);
+  --card-border: rgba(0,0,0,0.06);
+  --text:     #1D1D1F;
+  --subtext:  #86868B;
+  --divider:  rgba(0,0,0,0.06);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.06), 0 2px 4px rgba(0,0,0,0.04);
+  --radius: 14px;
+  --radius-sm: 10px;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  display: flex;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ============================================================
+   Sidebar
+   ============================================================ */
+.sidebar {
+  width: 220px;
+  min-height: 100vh;
+  background: var(--sidebar-bg);
+  backdrop-filter: blur(30px) saturate(180%);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  border-right: 1px solid var(--divider);
+  display: flex;
+  flex-direction: column;
+  padding: 24px 0;
+  position: fixed; top:0; left:0; bottom:0; z-index:100;
+}
+
+.sidebar-logo {
+  padding: 0 20px 28px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.3px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sidebar-logo .icon {
+  width: 34px; height: 34px;
+  background: linear-gradient(135deg, var(--blue), #5856D6);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 16px;
+}
+
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 20px; margin: 2px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 14px; font-weight: 500;
+  color: var(--subtext);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-decoration: none;
+}
+
+.nav-item:hover { background: rgba(0,0,0,0.04); color: var(--text); }
+.nav-item.active { background: rgba(0,122,255,0.1); color: var(--blue); font-weight: 600; }
+.nav-item svg { width: 20px; height: 20px; opacity: 0.7; }
+.nav-item.active svg { opacity: 1; }
+
+.nav-section { font-size: 11px; font-weight: 600; color: var(--subtext); text-transform: uppercase; letter-spacing: 0.5px; padding: 20px 20px 8px; }
+
+/* ============================================================
+   Main Content
+   ============================================================ */
+.main {
+  margin-left: 220px;
+  flex: 1;
+  padding: 24px 28px;
+}
+
+/* Top Bar */
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 0 24px;
+  gap: 16px;
+}
+
+.breadcrumb { font-size: 13px; color: var(--subtext); }
+.breadcrumb span { color: var(--text); font-weight: 600; }
+
+.topbar-right {
+  display: flex; align-items: center; gap: 10px;
+}
+
+.btn {
+  padding: 8px 16px;
+  border-radius: 8px; border: none;
+  font-size: 13px; font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+  background: rgba(0,0,0,0.04);
+  color: var(--text);
+  display: flex; align-items: center; gap: 6px;
+}
+
+.btn:hover { background: rgba(0,0,0,0.08); }
+.btn-primary { background: var(--blue); color: #fff; }
+.btn-primary:hover { background: #0066d6; }
+
+.date-picker {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--divider);
+  font-size: 13px;
+  font-family: inherit;
+  background: rgba(255,255,255,0.6);
+  backdrop-filter: blur(10px);
+  color: var(--text);
+  outline: none;
+}
+
+.date-picker:focus { border-color: var(--blue); }
+
+/* KPI Cards Row */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.kpi-card {
+  background: var(--card-bg);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s ease;
+}
+
+.kpi-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.kpi-card .label {
+  font-size: 12px; color: var(--subtext);
+  font-weight: 500;
+  margin-bottom: 6px;
+}
+
+.kpi-card .value {
+  font-size: 26px; font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.5px;
+}
+
+.kpi-card .change {
+  font-size: 12px; font-weight: 600;
+  margin-top: 4px;
+}
+
+.change-up { color: var(--green); }
+.change-down { color: var(--red); }
+
+/* Chart Rows */
+.chart-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.chart-row.three {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+@media (max-width: 1200px) {
+  .chart-row, .chart-row.three { grid-template-columns: 1fr; }
+}
+
+.card {
+  background: var(--card-bg);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  padding: 20px;
+  box-shadow: var(--shadow-sm);
+}
+
+.card h3 {
+  font-size: 14px; font-weight: 600;
+  color: var(--text);
+  margin-bottom: 12px;
+}
+
+.chart { width: 100%; height: 300px; }
+
+/* Table */
+.table-wrap {
+  max-height: 340px;
+  overflow-y: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+th {
+  text-align: left;
+  padding: 10px 12px;
+  font-weight: 600;
+  color: var(--subtext);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  border-bottom: 1px solid var(--divider);
+  position: sticky; top: 0;
+  background: rgba(255,255,255,0.9);
+}
+
+td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--divider);
+  color: var(--text);
+}
+
+tr:nth-child(even) td { background: rgba(0,0,0,0.015); }
+
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px; font-weight: 600;
+}
+
+.badge-green  { background: rgba(52,199,89,0.12); color: var(--green); }
+.badge-red    { background: rgba(255,59,48,0.12); color: var(--red); }
+.badge-orange { background: rgba(255,149,0,0.12); color: var(--orange); }
+.badge-blue   { background: rgba(0,122,255,0.12); color: var(--blue); }
+
+/* Alert list */
+.alert-list { display: flex; flex-direction: column; gap: 10px; }
+
+.alert-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px;
+  background: rgba(0,0,0,0.02);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--divider);
+}
+
+.alert-item .info { display: flex; flex-direction: column; gap: 2px; }
+.alert-item .title { font-size: 13px; font-weight: 600; }
+.alert-item .meta  { font-size: 12px; color: var(--subtext); }
+.alert-item .amount { font-size: 14px; font-weight: 700; text-align: right; }
+
+/* Loading */
+.loading { text-align:center; padding:40px; color:var(--subtext); font-size:14px; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     Sidebar
+     ============================================================ -->
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <div class="icon">🏦</div>
+    <span>Bank DW</span>
+  </div>
+
+  <div class="nav-section">概览</div>
+  <a class="nav-item active" onclick="switchTab(this,'overview')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+    驾驶舱总览
+  </a>
+  <a class="nav-item" onclick="switchTab(this,'transactions')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    交易监控
+  </a>
+  <a class="nav-item" onclick="switchTab(this,'risk')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+    风险管理
+  </a>
+
+  <div class="nav-section">分析</div>
+  <a class="nav-item" onclick="switchTab(this,'customers')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    客户分析
+  </a>
+  <a class="nav-item" onclick="switchTab(this,'reports')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+    报表导出
+  </a>
+</nav>
+
+<!-- ============================================================
+     Main Content
+     ============================================================ -->
+<main class="main">
+
+  <!-- Top Bar -->
+  <div class="topbar">
+    <div class="breadcrumb">Bank DW <span style="margin:0 6px;">›</span> <span id="tab-title">驾驶舱总览</span></div>
+    <div class="topbar-right">
+      <input type="date" class="date-picker" id="datePicker" value="2026-06-14" onchange="loadAll()">
+      <button class="btn" onclick="loadAll()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+        刷新
+      </button>
+      <button class="btn btn-primary">Export</button>
+    </div>
+  </div>
+
+  <!-- Tab: Overview -->
+  <div id="tab-overview">
+
+    <!-- KPI Cards -->
+    <div class="kpi-grid" id="kpi-cards"></div>
+
+    <!-- Charts Row 1 -->
+    <div class="chart-row">
+      <div class="card"><h3>📊 交易趋势（24小时）</h3><div id="chart-hourly" class="chart"></div></div>
+      <div class="card"><h3>📈 客户AUM分层</h3><div id="chart-aum" class="chart"></div></div>
+    </div>
+
+    <!-- Charts Row 2 -->
+    <div class="chart-row">
+      <div class="card"><h3>🏪 渠道交易分布</h3><div id="chart-channel" class="chart"></div></div>
+      <div class="card"><h3>💰 账户类型分布</h3><div id="chart-acct" class="chart"></div></div>
+    </div>
+
+    <!-- Top Customers -->
+    <div class="card" style="margin-top:16px">
+      <h3>👤 高净值客户 Top 15</h3>
+      <div id="chart-topcust" class="chart" style="height:340px"></div>
+    </div>
+  </div>
+
+  <!-- Tab: Transactions -->
+  <div id="tab-transactions" style="display:none">
+    <div class="kpi-grid" id="txn-summary"></div>
+    <div class="card" style="margin-top:16px">
+      <h3>📋 最新交易流水</h3>
+      <div class="table-wrap"><table id="txn-table"><thead><tr><th>交易ID</th><th>时间</th><th>类型</th><th>金额</th><th>渠道</th><th>状态</th></tr></thead><tbody></tbody></table></div>
+    </div>
+  </div>
+
+  <!-- Tab: Risk -->
+  <div id="tab-risk" style="display:none">
+    <div class="kpi-grid" id="risk-cards"></div>
+    <div class="card" style="margin-top:16px">
+      <h3>⚠️ 风险告警列表（大额+夜间异常交易）</h3>
+      <div class="alert-list" id="alert-list"></div>
+    </div>
+  </div>
+
+  <!-- Tab: Customers -->
+  <div id="tab-customers" style="display:none">
+    <div class="card"><h3>👤 高净值客户 Top 15</h3><div id="chart-cust-tab" class="chart" style="height:400px"></div></div>
+  </div>
+
+  <!-- Tab: Reports -->
+  <div id="tab-reports" style="display:none">
+    <div class="card" style="text-align:center;padding:60px">
+      <h3>📄 报表导出</h3>
+      <p style="color:var(--subtext);margin-top:8px">选择时间范围，导出 1104 监管报表、EAST 标准化数据</p>
+      <button class="btn btn-primary" style="margin-top:16px">导出 Excel 报表</button>
+    </div>
+  </div>
+
+</main>
+
+<script>
+// ============================================================
+// API Layer
+// ============================================================
+const API = 'http://localhost:8899/api';
+
+function getDate() { return document.getElementById('datePicker').value; }
+
+async function fetchJSON(path) {
+  try {
+    const res = await fetch(`${API}${path}`);
+    return await res.json();
+  } catch(e) {
+    console.error(`Fetch ${path} failed:`, e);
+    return [];
+  }
+}
+
+// ============================================================
+// Tab Switching
+// ============================================================
+function switchTab(el, tab) {
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('[id^="tab-"]').forEach(d => d.style.display = 'none');
+  document.getElementById('tab-' + tab).style.display = 'block';
+  document.getElementById('tab-title').textContent = el.textContent.trim();
+  if (tab === 'overview')   loadOverview();
+  if (tab === 'transactions') loadTransactions();
+  if (tab === 'risk')        loadRisk();
+  if (tab === 'customers')   loadCustomersTab();
+}
+
+// ============================================================
+// Formatting
+// ============================================================
+function fmt(n, unit) {
+  if (n === null || n === undefined) return '-';
+  const v = parseFloat(n);
+  if (unit === 'yi')   return (v / 1e8).toFixed(2) + ' 亿';
+  if (unit === 'wan')  return (v / 1e4).toFixed(0) + ' 万';
+  if (unit === 'pct')  return v.toFixed(2) + '%';
+  if (v >= 1e8) return (v / 1e8).toFixed(2) + ' 亿';
+  if (v >= 1e4) return (v / 1e4).toFixed(0) + ' 万';
+  return v.toLocaleString('zh-CN', {maximumFractionDigits:0});
+}
+
+// ============================================================
+// Overview Tab
+// ============================================================
+async function loadOverview() {
+  const [kpiData, aumData, hourly, channels, acctTypes, topCust] = await Promise.all([
+    fetchJSON('/kpi'), fetchJSON('/aum-distribution'), fetchJSON('/hourly-trend'),
+    fetchJSON('/channel-distribution'), fetchJSON('/account-types'), fetchJSON('/top-customers')
+  ]);
+
+  // KPI Cards
+  const kpiMap = {};
+  kpiData.forEach(k => kpiMap[k.kpi_code] = k);
+
+  const kpiDefs = [
+    { code:'TOTAL_CUSTOMER', label:'总客户数', fmt:'num' },
+    { code:'TOTAL_DEPOSIT',  label:'存款余额', fmt:'yi' },
+    { code:'TOTAL_ACCOUNT',  label:'账户总数', fmt:'num' },
+    { code:'DAILY_TXN_CNT',  label:'当日交易笔数', fmt:'num' },
+    { code:'DAILY_TXN_AMT',  label:'当日交易金额', fmt:'yi' },
+    { code:'TOTAL_LOAN',     label:'贷款合同数', fmt:'num' },
+    { code:'TOTAL_CC',       label:'信用卡发卡量', fmt:'num' },
+  ];
+  document.getElementById('kpi-cards').innerHTML = kpiDefs.map(d => {
+    const k = kpiMap[d.code] || {};
+    const val = k.kpi_value || 0;
+    return `<div class="kpi-card">
+      <div class="label">${d.label}</div>
+      <div class="value">${fmt(val, d.fmt === 'yi' ? 'yi' : 'num')}</div>
+    </div>`;
+  }).join('');
+
+  // Charts
+  renderHourly(hourly);
+  renderAum(aumData);
+  renderChannel(channels);
+  renderAcctTypes(acctTypes);
+  renderTopCustomers(topCust, 'chart-topcust');
+}
+
+function renderHourly(data) {
+  const hours = data.map(d => d.hour + ':00');
+  const cnts  = data.map(d => d.cnt);
+  echarts.init(document.getElementById('chart-hourly')).setOption({
+    tooltip: { trigger:'axis' },
+    grid: { left:50, right:20, top:10, bottom:30 },
+    xAxis: { type:'category', data: hours, axisLabel:{color:'#86868B',fontSize:11}, axisLine:{lineStyle:{color:'#E5E5EA'}} },
+    yAxis: { type:'value', axisLabel:{color:'#86868B'}, splitLine:{lineStyle:{color:'#F0F0F5'}} },
+    series: [{
+      name:'笔数', type:'bar', data: cnts,
+      itemStyle: { color: { type:'linear', x:0,y:0,x2:0,y2:1, colorStops:[{offset:0,color:'#007AFF'},{offset:1,color:'#99C9FF'}] }, borderRadius:[6,6,0,0] },
+      barWidth: 16
+    }]
+  });
+}
+
+function renderAum(data) {
+  echarts.init(document.getElementById('chart-aum')).setOption({
+    tooltip: { trigger:'item' },
+    series: [{
+      type:'pie', radius:['50%','78%'], center:['50%','55%'],
+      label: { color:'#86868B', fontSize:11 },
+      data: data.map(d => ({name:d.bucket,value:d.cnt})),
+      itemStyle: { borderColor:'#fff', borderWidth:3, borderRadius:6 },
+      color: ['#007AFF','#5856D6','#BF5AF2','#FF9500','#34C759','#5AC8FA','#FF3B30']
+    }]
+  });
+}
+
+function renderChannel(data) {
+  echarts.init(document.getElementById('chart-channel')).setOption({
+    tooltip: { trigger:'item' },
+    series: [{
+      type:'pie', radius:'65%', center:['50%','55%'],
+      label: { color:'#86868B', fontSize:11 },
+      data: data.slice(0,6).map(d => ({name:d.channel,value:d.cnt})),
+      itemStyle: { borderColor:'#fff', borderWidth:3, borderRadius:6 },
+      color: ['#BF5AF2','#007AFF','#34C759','#FF9500','#5AC8FA','#FF3B30']
+    }]
+  });
+}
+
+function renderAcctTypes(data) {
+  const names = data.map(d => d.type).reverse();
+  const cnts  = data.map(d => d.cnt).reverse();
+  echarts.init(document.getElementById('chart-acct')).setOption({
+    tooltip: { trigger:'axis' },
+    grid: { left:120, right:20, top:10, bottom:30 },
+    yAxis: { type:'category', data: names, axisLabel:{color:'#86868B'} },
+    xAxis: { type:'value', axisLabel:{color:'#86868B'}, splitLine:{lineStyle:{color:'#F0F0F5'}} },
+    series: [{ type:'bar', data: cnts, itemStyle:{color:'#007AFF',borderRadius:[0,6,6,0]}, barWidth:16 }]
+  });
+}
+
+function renderTopCustomers(data, domId) {
+  const names = data.map(d => (d.cust_name||'***').slice(0,6)).reverse();
+  const amts  = data.map(d => (d.amt/10000).toFixed(0)).reverse();
+  echarts.init(document.getElementById(domId)).setOption({
+    tooltip: { trigger:'axis', formatter: '{b}<br/>资产: {c} 万' },
+    grid: { left:100, right:60, top:10, bottom:30 },
+    yAxis: { type:'category', data: names, axisLabel:{color:'#1D1D1F',fontSize:12} },
+    xAxis: { type:'value', axisLabel:{color:'#86868B'}, splitLine:{lineStyle:{color:'#F0F0F5'}} },
+    series: [{
+      type:'bar', data: amts,
+      itemStyle: { color:{type:'linear',x:1,y:0,x2:0,y2:0,colorStops:[{offset:0,color:'#007AFF'},{offset:1,color:'#99C9FF'}]}, borderRadius:[0,6,6,0] },
+      label: { show:true, position:'right', color:'#86868B', formatter:'{c}万' }
+    }]
+  });
+}
+
+// ============================================================
+// Transactions Tab
+// ============================================================
+async function loadTransactions() {
+  const [summary, txns] = await Promise.all([
+    fetchJSON('/transaction-summary'), fetchJSON('/transactions')
+  ]);
+
+  const s = summary || {};
+  document.getElementById('txn-summary').innerHTML = [
+    { label:'交易总笔数', value: fmt(s.total_cnt) },
+    { label:'交易总金额', value: fmt(s.total_amt, 'yi') },
+    { label:'笔均金额',   value: fmt(s.avg_amt, 'wan') },
+    { label:'成功笔数',   value: fmt(s.success_cnt) },
+  ].map(d =>
+    `<div class="kpi-card"><div class="label">${d.label}</div><div class="value">${d.value}</div></div>`
+  ).join('');
+
+  document.getElementById('txn-table').querySelector('tbody').innerHTML = (txns||[]).map(t => `
+    <tr>
+      <td style="font-family:monospace;font-size:12px">${(t.transaction_hash_key||'').slice(0,16)}...</td>
+      <td>${t.trans_time||''}</td>
+      <td>${t.trans_type||''}</td>
+      <td style="text-align:right;font-weight:600">¥${fmt(t.trans_amt)}</td>
+      <td>${t.channel||''}</td>
+      <td><span class="badge badge-${t.trans_status==='SUCCESS'?'green':'red'}">${t.trans_status||''}</span></td>
+    </tr>`).join('');
+}
+
+// ============================================================
+// Risk Tab
+// ============================================================
+async function loadRisk() {
+  const [overview, alerts] = await Promise.all([
+    fetchJSON('/risk/overview'), fetchJSON('/risk/alerts')
+  ]);
+
+  const o = overview || {};
+  document.getElementById('risk-cards').innerHTML = [
+    { label:'风控通过率', value:(o.pass_rate||99.99)+'%', cls:'change-up' },
+    { label:'大额交易笔数', value:fmt(o.large_txn_cnt) },
+    { label:'大额交易金额', value:fmt(o.large_txn_amt,'yi') },
+    { label:'夜间交易笔数', value:fmt(o.night_txn_cnt) },
+    { label:'异常交易占比', value:(o.abnormal_rate||0)+'%', cls:'change-down' },
+  ].map(d =>
+    `<div class="kpi-card"><div class="label">${d.label}</div><div class="value">${d.value}</div></div>`
+  ).join('');
+
+  document.getElementById('alert-list').innerHTML = (alerts||[]).map(a => `
+    <div class="alert-item">
+      <div class="info">
+        <div class="title">${a.trans_type||'交易'} · ${a.channel||''}</div>
+        <div class="meta">${a.trans_time||''} · ${(a.transaction_hash_key||'').slice(0,12)}...</div>
+      </div>
+      <div style="text-align:right">
+        <div class="amount" style="color:${a.risk_level==='HIGH'?'var(--red)':a.risk_level==='MEDIUM'?'var(--orange)':'var(--subtext)'}">¥${fmt(a.trans_amt)}</div>
+        <span class="badge badge-${a.risk_level==='HIGH'?'red':a.risk_level==='MEDIUM'?'orange':'blue'}">${a.risk_level||'LOW'}</span>
+      </div>
+    </div>`).join('');
+}
+
+// ============================================================
+// Customers Tab
+// ============================================================
+async function loadCustomersTab() {
+  const topCust = await fetchJSON('/top-customers');
+  renderTopCustomers(topCust, 'chart-cust-tab');
+}
+
+// ============================================================
+// Init
+// ============================================================
+function loadAll() {
+  const active = document.querySelector('.nav-item.active');
+  if (active) {
+    const tab = active.textContent.trim();
+    if (tab.includes('总览')) loadOverview();
+    else if (tab.includes('交易')) loadTransactions();
+    else if (tab.includes('风险')) loadRisk();
+    else if (tab.includes('客户')) loadCustomersTab();
+  }
+}
+
+loadOverview();
+</script>
+
+</body>
+</html>

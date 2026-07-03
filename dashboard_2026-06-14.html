@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>银行数据驾驶舱 — 2026-06-14</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Microsoft YaHei',sans-serif; background:#0a1628; color:#e0e6ed; }
+.header { text-align:center; padding:18px; background:linear-gradient(90deg,#0d2137,#0a1628,#0d2137); border-bottom:2px solid #1a3a5c; }
+.header h1 { font-size:28px; color:#00d4ff; letter-spacing:6px; margin-bottom:4px; }
+.header span { color:#4a6a8a; font-size:13px; }
+.kpi-row { display:flex; justify-content:center; padding:16px 20px; flex-wrap:wrap; gap:12px; }
+.kpi-card { background:linear-gradient(135deg,#0d2137,#132d4a); border:1px solid #1a3a5c; border-radius:10px; padding:18px 28px; text-align:center; min-width:150px; }
+.kpi-card .value { font-size:28px; font-weight:bold; color:#00d4ff; }
+.kpi-card .label { font-size:12px; color:#6889a8; margin-top:6px; }
+.row { display:flex; padding:0 20px 16px; gap:16px; flex-wrap:wrap; }
+.box { flex:1; min-width:420px; background:#0d1a2d; border:1px solid #1a3a5c; border-radius:10px; padding:14px; }
+.box h3 { font-size:14px; color:#00d4ff; margin-bottom:6px; text-align:center; }
+.chart { width:100%; height:330px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🏦 银行数据驾驶舱</h1>
+  <span>数据日期: 2026-06-14 | 数据源: Hive on HDFS | 离线 T+1 日批 | 表: bank_ads.ads_mgmt_kpi</span>
+</div>
+
+<div class="kpi-row">
+  <div class="kpi-card"><div class="value">1,000</div><div class="label">总客户数</div></div>
+  <div class="kpi-card"><div class="value">39.22亿</div><div class="label">存款余额</div></div>
+  <div class="kpi-card"><div class="value">49,859</div><div class="label">当日交易笔数</div></div>
+  <div class="kpi-card"><div class="value">124.69亿</div><div class="label">当日交易金额</div></div>
+  <div class="kpi-card"><div class="value">2,000</div><div class="label">账户总数</div></div>
+  <div class="kpi-card"><div class="value">300</div><div class="label">贷款合同数</div></div>
+  <div class="kpi-card"><div class="value">500</div><div class="label">信用卡发卡量</div></div>
+</div>
+
+<div class="row">
+  <div class="box"><h3>📊 交易趋势（24小时）</h3><div id="c1" class="chart"></div></div>
+  <div class="box"><h3>📈 客户AUM分层分布</h3><div id="c2" class="chart"></div></div>
+</div>
+
+<div class="row">
+  <div class="box"><h3>🏪 渠道交易分布</h3><div id="c3" class="chart"></div></div>
+  <div class="box"><h3>💰 账户类型分布</h3><div id="c4" class="chart"></div></div>
+</div>
+
+<div class="row">
+  <div class="box" style="flex:2"><h3>👤 Top 20 高净值客户</h3><div id="c5" class="chart"></div></div>
+</div>
+
+<div style="text-align:center;padding:14px;color:#3a5a7a;font-size:12px;">
+  Bank Data Warehouse v1.0 | Hadoop 3.3.6 / Hive 3.1.3 / Spark 3.5.8 | 2026-06-14
+</div>
+
+<script>
+var c = function(id,opt){ echarts.init(document.getElementById(id)).setOption(opt); };
+
+c('c1',{
+  tooltip:{trigger:'axis'},
+  grid:{left:50,right:20,top:10,bottom:30},
+  xAxis:{type:'category',data:[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23],axisLabel:{color:'#6889a8'}},
+  yAxis:{type:'value',axisLabel:{color:'#6889a8'},splitLine:{lineStyle:{color:'#1a2a3a'}}},
+  series:[{name:'交易笔数',type:'bar',data:[2135, 2074, 2055, 2079, 2106, 2098, 2107, 2041, 2130, 2065, 2119, 2046, 2164, 1998, 2085, 2020, 2106, 2100, 2163, 2034, 2065, 2152, 1992, 2066],
+    itemStyle:{color:{type:'linear',x:0,y:0,x2:0,y2:1,colorStops:[{offset:0,color:'#00d4ff'},{offset:1,color:'#004466'}]}}}]
+});
+
+c('c2',{
+  tooltip:{trigger:'item'},
+  series:[{type:'pie',radius:['45%','75%'],center:['50%','55%'],
+    label:{color:'#6889a8',fontSize:11},
+    data:[{"name": "1\u4e07\u4ee5\u4e0b", "value": 77}, {"name": "1-10\u4e07", "value": 8}, {"name": "10-50\u4e07", "value": 26}, {"name": "50-100\u4e07", "value": 39}, {"name": "100-500\u4e07", "value": 418}, {"name": "500-1000\u4e07", "value": 253}, {"name": "1000\u4e07+", "value": 58}],
+    itemStyle:{borderColor:'#0a1628',borderWidth:2}
+  }]
+});
+
+c('c3',{
+  tooltip:{trigger:'item'},
+  series:[{type:'pie',radius:'70%',center:['50%','55%'],
+    label:{color:'#6889a8'},
+    data:[{"name": "ALIPAY", "value": 6340}, {"name": "POS_TRAD", "value": 6326}, {"name": "PERSONAL_IB", "value": 6320}, {"name": "WECHAT_PAY", "value": 6255}, {"name": "COUNTER_HIGH", "value": 6223}, {"name": "MOBILE_BANK", "value": 6206}, {"name": "ATM", "value": 6181}, {"name": "COUNTER_LOW", "value": 6149}],
+    itemStyle:{borderColor:'#0a1628',borderWidth:2}
+  }]
+});
+
+c('c4',{
+  tooltip:{trigger:'axis'},
+  grid:{left:110,right:20,top:10,bottom:30},
+  yAxis:{type:'category',data:["TIME_1Y", "TIME_5Y", "CD", "TIME_3M", "TIME_3Y", "DEMAND", "NOTICE_1D", "STRUCTURAL", "NOTICE_7D", "TIME_6M"],axisLabel:{color:'#6889a8'}},
+  xAxis:{type:'value',axisLabel:{color:'#6889a8'},splitLine:{lineStyle:{color:'#1a2a3a'}}},
+  series:[{type:'bar',data:[187, 191, 195, 195, 195, 200, 201, 208, 209, 219],itemStyle:{color:'#00d4ff'}}]
+});
+
+c('c5',{
+  tooltip:{trigger:'axis',formatter:'{b}<br/>资产: {c}万'},
+  grid:{left:110,right:60,top:10,bottom:30},
+  yAxis:{type:'category',data:["\u6c88\u9633\u5efa**", "\u738b\u6d0b**", "\u4e1c\u839e\u5efa**", "\u5929\u6d25\u5efa**", "\u6768\u534e**", "\u80e1\u8f89**", "\u5434\u82b3**", "\u6210\u90fd\u6295**", "\u8bb8\u5b87**", "\u676d\u5dde\u8d38**", "\u8bb8\u6d9b**", "\u897f\u5b89\u79d1**", "\u957f\u6c99\u79d1**", "\u8bb8\u5a77**", "\u5b59\u73b2**", "\u6df1\u5733\u5efa**", "\u6df1\u5733\u79d1**", "\u9752\u5c9b\u8d38**", "\u6768\u5a1c**", "\u82cf\u5dde\u5b9e**"],axisLabel:{color:'#c0d0e0',fontSize:12}},
+  xAxis:{type:'value',axisLabel:{color:'#6889a8'},splitLine:{lineStyle:{color:'#1a2a3a'}}},
+  series:[{type:'bar',data:[1372.0, 1374.0, 1390.0, 1394.0, 1416.0, 1422.0, 1434.0, 1512.0, 1523.0, 1545.0, 1572.0, 1631.0, 1639.0, 1686.0, 1709.0, 1774.0, 1795.0, 1948.0, 1955.0, 2059.0],
+    itemStyle:{color:{type:'linear',x:1,y:0,x2:0,y2:0,colorStops:[{offset:0,color:'#00d4ff'},{offset:1,color:'#004466'}]}},
+    label:{show:true,position:'right',color:'#6889a8',formatter:'{c}万'}
+  }]
+});
+</script>
+</body>
+</html>
